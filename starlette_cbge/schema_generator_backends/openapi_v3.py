@@ -116,7 +116,7 @@ class OpenAPIv3SchemaGenerator(SchemaGenerator):
 
             target["description"] = self.parse_docstring(endpoint.func)
             # TODO distinguish body and parameters below
-            request_schema_class = dict(endpoint.endpoint.request_schema).get(
+            request_schema_class = dict(endpoint.endpoint.request_schemas).get(
                 endpoint.http_method.upper()
             )
             if request_schema_class:
@@ -126,7 +126,7 @@ class OpenAPIv3SchemaGenerator(SchemaGenerator):
             # TODO account responses for exceptions
             target["responses"] = {}
 
-            response_schema_class = dict(endpoint.endpoint.response_schema).get(
+            response_schema_class = dict(endpoint.endpoint.response_schemas).get(
                 endpoint.http_method.upper()
             )
             response_schema = (
@@ -134,15 +134,28 @@ class OpenAPIv3SchemaGenerator(SchemaGenerator):
             )
 
             # TODO account non-std success status codes
+            # TODO refactor
             target["responses"]["200"] = {}
             target["responses"]["200"]["description"] = "Successful response"
-            target["responses"]["content"] = {}
-            target["responses"]["content"][
+            target["responses"]["200"]["content"] = {}
+            target["responses"]["200"]["content"][
                 endpoint.endpoint.response_class.media_type
             ] = {}
-            target["responses"]["content"][endpoint.endpoint.response_class.media_type][
-                "schema"
-            ] = response_schema
+            target["responses"]["200"]["content"][
+                endpoint.endpoint.response_class.media_type
+            ]["schema"] = response_schema
+
+            # Add exception responses
+            for status, exception in dict(endpoint.endpoint.exception_classes).items():
+                target["responses"][status] = {}
+                target["responses"][status]["description"] = exception.description()
+                target["responses"][status]["content"] = {}
+                target["responses"][status]["content"][
+                    endpoint.endpoint.response_class.media_type
+                ] = {}
+                target["responses"][status]["content"][
+                    endpoint.endpoint.response_class.media_type
+                ]["schema"] = exception.schema()
 
             # TODO hook exceptions
         return schema

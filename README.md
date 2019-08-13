@@ -43,7 +43,7 @@ import typing
 
 import aiosqlite
 
-from starlette_cbge.endpoints import BaseEndpoint
+from starlette_cbge.endpoints import PydanticBaseEndpoint
 
 from example_app.db import database
 from starlette_cbge.schema_backends import PydanticSchema, PydanticListSchema
@@ -68,15 +68,15 @@ class AuthorResponseListSchema(PydanticListSchema):
     name: str
 
 
-class Authors(BaseEndpoint):
+class Authors(PydanticBaseEndpoint):
     """
     Collection endpoint.
     """
-    request_schema = (
+    request_schemas = (
         ("GET", AuthorGetCoolectionRequestSchema),
         ("POST", AuthorPostRequestSchema),
     )
-    response_schema = (
+    response_schemas = (
         ("GET", AuthorResponseListSchema),
         ("POST", AuthorResponseSchema),
     )
@@ -125,103 +125,163 @@ Generated schema
 
 ```json
 {
-  "openapi": "3.0.0",
-  "info": {
-    "title": "Example API",
-    "version": "1.0"
-  },
-  "paths": {
-    "/authors": {
-      "get": {
-        "description": "Retrieves the list of authors. List is limited with `limit` and `offset` fields.",
-        "parameters": {
-          "title": "AuthorGetCoolectionRequestSchema",
-          "type": "object",
-          "properties": {
-            "limit": {
-              "title": "Limit",
-              "default": 100,
-              "type": "integer"
+   "openapi":"3.0.0",
+   "info":{
+      "title":"Example API",
+      "version":"1.0"
+   },
+   "paths":{
+      "/authors":{
+         "get":{
+            "description":"Retrieves the list of authors. List is limited with `limit` and `offset` fields.",
+            "parameters":{
+               "title":"AuthorGetCoolectionRequestSchema",
+               "type":"object",
+               "properties":{
+                  "limit":{
+                     "title":"Limit",
+                     "default":100,
+                     "type":"integer"
+                  },
+                  "offset":{
+                     "title":"Offset",
+                     "default":0,
+                     "type":"integer"
+                  }
+               }
             },
-            "offset": {
-              "title": "Offset",
-              "default": 0,
-              "type": "integer"
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          },
-          "content": {
-            "application/json": {
-              "schema": {
-                "title": "AuthorResponseListSchema",
-                "type": "object",
-                "properties": {
-                  "id": {
-                    "title": "Id",
-                    "type": "integer"
-                  },
-                  "name": {
-                    "title": "Name",
-                    "type": "string"
+            "responses":{
+               "200":{
+                  "description":"Successful response",
+                  "content":{
+                     "application/json":{
+                        "schema":{
+                           "title":"AuthorResponseListSchema",
+                           "type":"object",
+                           "properties":{
+                              "id":{
+                                 "title":"Id",
+                                 "type":"integer"
+                              },
+                              "name":{
+                                 "title":"Name",
+                                 "type":"string"
+                              }
+                           },
+                           "required":[
+                              "id",
+                              "name"
+                           ]
+                        }
+                     }
                   }
-                },
-                "required": [
-                  "id",
-                  "name"
-                ]
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "description": "Creates a new authors and returns the created record",
-        "parameters": {
-          "title": "AuthorPostRequestSchema",
-          "type": "object",
-          "properties": {
-            "name": {
-              "title": "Name",
-              "type": "string"
-            }
-          },
-          "required": [
-            "name"
-          ]
-        },
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          },
-          "content": {
-            "application/json": {
-              "schema": {
-                "title": "AuthorResponseSchema",
-                "type": "object",
-                "properties": {
-                  "id": {
-                    "title": "Id",
-                    "type": "integer"
-                  },
-                  "name": {
-                    "title": "Name",
-                    "type": "string"
+               },
+               "422":{
+                  "description":"Invalid request",
+                  "content":{
+                     "application/json":{
+                        "schema":{
+                           "title":"type",
+                           "type":"object",
+                           "properties":{
+                              "detail":{
+                                 "title":"Detail",
+                                 "type":"string"
+                              },
+                              "errors":{
+                                 "title":"Errors",
+                                 "default":[
+
+                                 ],
+                                 "type":"array",
+                                 "items":{
+                                    "type":"object"
+                                 }
+                              }
+                           },
+                           "required":[
+                              "detail"
+                           ]
+                        }
+                     }
                   }
-                },
-                "required": [
-                  "id",
-                  "name"
-                ]
-              }
+               }
             }
-          }
-        }
+         },
+         "post":{
+            "description":"Creates a new authors and returns the created record",
+            "parameters":{
+               "title":"AuthorPostRequestSchema",
+               "type":"object",
+               "properties":{
+                  "name":{
+                     "title":"Name",
+                     "type":"string"
+                  }
+               },
+               "required":[
+                  "name"
+               ]
+            },
+            "responses":{
+               "200":{
+                  "description":"Successful response",
+                  "content":{
+                     "application/json":{
+                        "schema":{
+                           "title":"AuthorResponseSchema",
+                           "type":"object",
+                           "properties":{
+                              "id":{
+                                 "title":"Id",
+                                 "type":"integer"
+                              },
+                              "name":{
+                                 "title":"Name",
+                                 "type":"string"
+                              }
+                           },
+                           "required":[
+                              "id",
+                              "name"
+                           ]
+                        }
+                     }
+                  }
+               },
+               "422":{
+                  "description":"Invalid request",
+                  "content":{
+                     "application/json":{
+                        "schema":{
+                           "title":"type",
+                           "type":"object",
+                           "properties":{
+                              "detail":{
+                                 "title":"Detail",
+                                 "type":"string"
+                              },
+                              "errors":{
+                                 "title":"Errors",
+                                 "default":[
+
+                                 ],
+                                 "type":"array",
+                                 "items":{
+                                    "type":"object"
+                                 }
+                              }
+                           },
+                           "required":[
+                              "detail"
+                           ]
+                        }
+                     }
+                  }
+               }
+            }
+         }
       }
-    }
-  }
+   }
 }
 ```

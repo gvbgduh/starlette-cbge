@@ -5,6 +5,9 @@ from typing import Dict, Any
 from starlette.exceptions import HTTPException
 
 
+INVALID_REQUEST = "Invalid request"
+
+
 class ExtendedHTTPException(HTTPException):
     def __init__(
         self, status_code: int, detail: str = None, errors: Dict = None
@@ -15,9 +18,10 @@ class ExtendedHTTPException(HTTPException):
     def to_dict(self) -> Dict[str, Any]:
         return {"description": self.detail, "errors": self.errors}
 
-    def schema(self) -> Dict[str, Any]:
+    @classmethod
+    def schema(cls) -> Dict[str, Any]:
         return {
-            "title": self.__class__.__name__,
+            "title": cls.__class__.__name__,
             "type": "object",
             "properties": {
                 "detail": {"title": "Detail", "type": "string"},
@@ -34,13 +38,14 @@ class ExtendedHTTPException(HTTPException):
 
 class InvalidRequestException(ExtendedHTTPException):
     def __init__(
-        self,
-        status_code: int = 422,
-        detail: str = "Invalid request",
-        errors: Dict = None,
+        self, status_code: int = 422, detail: str = INVALID_REQUEST, errors: Dict = None
     ) -> None:
         super(InvalidRequestException, self).__init__(status_code, detail)
         self.errors = errors
+
+    @classmethod
+    def description(cls) -> str:
+        return INVALID_REQUEST
 
 
 class ConflictException(ExtendedHTTPException):

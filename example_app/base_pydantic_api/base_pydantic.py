@@ -2,15 +2,10 @@ import typing
 
 import aiosqlite
 
-from starlette_cbge.endpoints import BaseEndpoint
+from starlette_cbge.endpoints import PydanticBaseEndpoint
 
 from example_app.db import database
-from starlette_cbge.schema_backends import (
-    PydanticSchema,
-    PydanticListSchema,
-    PydanticValidationError,
-    PydanticErrorResponse,
-)
+from starlette_cbge.schema_backends import PydanticSchema, PydanticListSchema
 
 
 class AuthorGetCoolectionRequestSchema(PydanticSchema):
@@ -45,21 +40,19 @@ class BlankResponseSchema(PydanticSchema):
     pass
 
 
-class Authors(BaseEndpoint):
+class Authors(PydanticBaseEndpoint):
     """
     Collection endpoint.
     """
 
-    request_schema = (
+    request_schemas = (
         ("GET", AuthorGetCoolectionRequestSchema),
         ("POST", AuthorPostRequestSchema),
     )
-    response_schema = (
+    response_schemas = (
         ("GET", AuthorResponseListSchema),
         ("POST", AuthorResponseSchema),
     )
-    validation_error_class = PydanticValidationError
-    error_response_schema = PydanticErrorResponse
 
     async def get(self, request_data: typing.Dict) -> typing.List[aiosqlite.Row]:
         """
@@ -87,17 +80,17 @@ class Authors(BaseEndpoint):
             return await cursor.fetchone()
 
 
-class Author(BaseEndpoint):
+class Author(PydanticBaseEndpoint):
     """
     Item endpoint.
     """
 
-    request_schema = (
+    request_schemas = (
         ("GET", AuthorIDRequestSchema),
         ("PUT", AuthorPutReuqestSchema),
         ("DELETE", AuthorIDRequestSchema),
     )
-    response_schema = (
+    response_schemas = (
         ("GET", AuthorResponseSchema),
         ("PUT", AuthorResponseSchema),
         ("DELETE", BlankResponseSchema),

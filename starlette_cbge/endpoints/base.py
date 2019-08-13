@@ -14,54 +14,96 @@ from starlette.background import BackgroundTasks
 from starlette.concurrency import run_in_threadpool
 from starlette.endpoints import HTTPEndpoint
 from starlette.requests import Request
-from starlette.responses import UJSONResponse, Response  # TODO make optional
+from starlette.responses import (
+    UJSONResponse,
+    Response,
+)  # TODO make optional UJSONResponse
 from starlette.types import Message, Receive, Scope, Send
 
 from starlette_cbge.exceptions import ExtendedHTTPException, InvalidRequestException
 
 
 class BaseEndpoint(HTTPEndpoint):
-    request_schema: Iterable[Tuple[str, Any]]
-    response_schema: Iterable[Tuple[str, Any]]
+    request_schemas: Iterable[Tuple[str, Any]]
+    response_schemas: Iterable[Tuple[str, Any]]
+
+    # TODO run with `exception_handler`?
+    exception_classes: Iterable[Tuple[str, Any]] = (("422", InvalidRequestException),)
 
     # TODO make it vary per method (?)
     response_class = UJSONResponse
-    validation_error_class: Optional[Any] = None
-    error_response_schema: Optional[Any] = None
+    base_exception_class = ExtendedHTTPException
 
     @property
-    def request_schemas(self) -> Dict[str, Any]:
-        if self.request_schema:
-            return dict(self.request_schema)
+    def request_schema(self) -> Dict[str, Any]:
+        if self.request_schemas:
+            return dict(self.request_schemas)
         else:
-            raise NotImplementedError()
+            raise NotImplementedError("No request schemas provided")
 
     @property
-    def response_schemas(self) -> Dict[str, Any]:
-        if self.response_schema:
-            return dict(self.response_schema)
+    def response_schema(self) -> Dict[str, Any]:
+        if self.response_schemas:
+            return dict(self.response_schemas)
         else:
-            raise NotImplementedError()
+            raise NotImplementedError("No response schemas provided")
 
-    def get_request_schema(self, method: str) -> Any:  # TODO !?
-        # TODO Consider common schema
-        request_schema = self.request_schemas.get(method)
-        if not request_schema:
-            raise NotImplementedError("No schema provided")
-        return request_schema
+    @property
+    def exception_class(self) -> Dict[str, Any]:
+        if self.exception_classes:
+            return dict(self.exception_classes)
+        else:
+            raise NotImplementedError("No exception classes provided")
+
+    def get_resource(self, key: str, resource_name: str) -> Any:
+        """
+        Get a resource class depending on the request method (for schemas)
+        or status code (for exceptions),
+        be it a request or response schema or an exception class.
+        """
+        resources = getattr(self, resource_name, None)
+        if resources is None:
+            raise NotImplementedError(
+                f"Resources of {resource_name} type are not provided"
+            )
+
+        resource = resources.get(key.upper(), None)
+        if resource is None:
+            raise NotImplementedError(
+                f"Resource {resource_name} has no class for {key} {'status code' if resource_name == 'exception_class' else 'method'}."
+            )
+
+        return resource
+
+    def get_request_schema(self, method: str) -> Any:
+        """
+        Request schema look up
+        """
+        return self.get_resource(method, resource_name="request_schema")
 
     def get_response_schema(self, method: str) -> Any:  # TODO !?
-        # TODO Consider common schema
-        response_schema = self.response_schemas.get(method)
-        if not response_schema:
-            raise NotImplementedError("No schema provided")
-        return response_schema
+        """
+        Response schema look up
+        """
+        return self.get_resource(method, resource_name="response_schema")
+
+    def get_exception_class(self, status: str) -> Any:
+        """
+        Exception class look up
+        """
+        return self.get_resource(status, resource_name="exception_class")
 
     def __init__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """
+        Adds the background tasks pool.
+        """
         super().__init__(scope, receive, send)
         self.tasks = BackgroundTasks()
 
     async def dispatch(self) -> None:
+        """
+        Overriding of the existing method.
+        """
         request = Request(self.scope, receive=self.receive)
         handler = self.perform_action
         # In case the `perform_action` method is overridden with a sync one.
@@ -74,6 +116,14 @@ class BaseEndpoint(HTTPEndpoint):
 
     async def acquire_request_payload(self, request: Request) -> Dict[str, Any]:
         """
+        Grab all details from the request, including:
+        - path params
+        - query params
+        - json payload
+        - form data payload
+
+        # TODO implement dispatcher for a particular payload
+        # TODO depending on the request content type
         """
         payload = {
             "path_params": request.path_params,
@@ -96,6 +146,11 @@ class BaseEndpoint(HTTPEndpoint):
         return payload
 
     async def shape_request_data(self, request: Request) -> Dict[str, Any]:
+        """
+        Shaping of the raw request data to the form required for the request schema.
+
+        TODO: Implement `request` and `params` parts for the OpenAPI v3
+        """
         # Place to override
         request_payload = await self.acquire_request_payload(request)
 
@@ -108,23 +163,30 @@ class BaseEndpoint(HTTPEndpoint):
         return data
 
     async def deserialize_payload(self, request: Request) -> Dict[str, Any]:
-        # raise NotImplementedError()
-        # TODO move to backend !!!
-        request_payload = await self.shape_request_data(request)
-        request_schema = self.get_request_schema(request.method)
-        try:
-            deserialized_payload = request_schema.perform_load(request_payload)
-        except Exception as exc:
-            if issubclass(self.validation_error_class, exc.__class__):
-                raise InvalidRequestException(errors=exc.errors())
-        return deserialized_payload
+        """
+        Run the shaped raw request data through the request model to perform:
+        - deserialization where/if required
+        - request data validation
+        - request data post-processing if required
+
+        Should be implemented in the particular schema back-end class.
+        """
+        raise NotImplementedError()
 
     async def acquire_request_context(self, request: Request) -> Dict[str, Any]:
+        """
+        Get additional context required for the request schema.
+        """
         deserialized_payload = await self.deserialize_payload(request)
         # TODO to implement custom context
         return deserialized_payload
 
     async def validate_action(self, request: Request) -> Dict[str, Any]:
+        """
+        Performs user defined validation.
+        Can be done here by overriding this method or by per method definitions
+        defining new method as `async def validate_{request.method}_action`.
+        """
         payload = await self.acquire_request_context(request)
 
         # TODO to implement custom validation
@@ -139,14 +201,25 @@ class BaseEndpoint(HTTPEndpoint):
         return payload
 
     # async def acquire_query_results(self, request):
+    #     """
+    #     For common queries usage, per method??
+    #     """
     #     raise NotImplementedError()
 
     async def collect_background_tasks(
         self, request_data: Dict[str, Any], raw_response: Any
     ) -> None:
+        """
+        Method to be overridden to set all user defined background tasks.
+        """
         pass
 
     async def perform_action(self, request: Request) -> Response:
+        """
+        The heartbeat of the endpoint - method triggered by dispatch.
+        Orchestrates request data retrieval, method call and response processing.
+        Also handles user defined exception that are subclassed from `self.base_exception_class`.
+        """
         handler_name = "get" if request.method == "HEAD" else request.method.lower()
         handler = getattr(self, handler_name, None)
 
@@ -166,27 +239,36 @@ class BaseEndpoint(HTTPEndpoint):
 
             return await self.process_response(request, request_data, raw_response)
 
-        except ExtendedHTTPException as exception:
+        except self.base_exception_class as exception:
             return await self.process_failure(exception)
 
     async def acquire_response_context(
         self, request_data: Dict[str, Any], raw_response: Any
-    ) -> Any:  # TODO !?
+    ) -> Any:
+        """
+        User defined procedure to acquire additional context required for the response schema.
+        """
         return raw_response
 
     async def serialise_response(
         self, request: Request, request_data: Dict[str, Any], raw_response: Any
     ) -> Dict[str, Any]:
-        # raise NotImplementedError()
-        # TODO move to backend !!!
-        response_schema = self.get_response_schema(request.method)
-        raw_response = await self.acquire_response_context(request_data, raw_response)
-        response_data = response_schema.perform_dump(raw_response)
-        return response_data
+        """
+        Run the raw response data through the request model to perform:
+        - response data validation (not handled exception)
+        - response data post-processing if required
+        - response data serialization
+
+        Should be implemented in the particular schema back-end class.
+        """
+        raise NotImplementedError()
 
     async def process_response(
         self, request: Request, request_data: Dict[str, Any], raw_response: Any
     ) -> Response:
+        """
+        Orchestrates the response processing flow.
+        """
         if request.method.lower() == "delete" and raw_response is None:
             return await self.process_success(response_data=None, status_code=204)
 
@@ -196,7 +278,9 @@ class BaseEndpoint(HTTPEndpoint):
         return await self.process_success(response_data)
 
     async def process_failure(self, exception: ExtendedHTTPException) -> Response:
-        # TODO define the schema !!
+        """
+        Handles failure during this request for handled exceptions.
+        """
         return self.response_class(
             exception.to_dict(), status_code=exception.status_code
         )
@@ -204,6 +288,9 @@ class BaseEndpoint(HTTPEndpoint):
     async def process_success(
         self, response_data: Optional[Dict[str, Any]], status_code: int = 200
     ) -> Response:
+        """
+        Handles final response wrapping to the Response class
+        """
         return self.response_class(
             response_data, background=self.tasks, status_code=status_code
         )
