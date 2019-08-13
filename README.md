@@ -1,6 +1,6 @@
 # Starlette Class Based Generic Endpoints
 
-Extension for `starlette` endpoint classes with following goals:
+Extension for `starlette` endpoint classes with the following goals:
 - Generic endpoints
     - Implement a flexibly customisable and easy to use generic endpoint as a high level abstraction on top of the `starlette.endpoints.HTTPEndpoint`
     - Provide a set of higher level endpoints that implements common cases, eg. _CollectionEndpoint_, _ItemEndpoint_
@@ -95,7 +95,7 @@ class Authors(PydanticBaseEndpoint):
 
     async def post(self, request_data: typing.Dict) -> aiosqlite.Row:
         """
-        Creates a new authors and returns the created record
+        Creates a new author and returns the created record
         """
         async with database.connection() as connection:
             raw_connection = connection.raw_connection

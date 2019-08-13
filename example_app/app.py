@@ -24,11 +24,6 @@ app = Starlette()
 app.mount("/base_pydantic_api", app=base_pydantic_api)
 
 
-# @app.exception_handler(HTTPException)
-# async def http_exception(request, exc):
-#     return JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
-
-
 @app.on_event("startup")
 async def startup() -> None:
     """

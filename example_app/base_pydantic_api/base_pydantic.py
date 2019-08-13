@@ -68,7 +68,7 @@ class Authors(PydanticBaseEndpoint):
 
     async def post(self, request_data: typing.Dict) -> aiosqlite.Row:
         """
-        Creates a new authors and returns the created record
+        Creates a new author and returns the created record
         """
         async with database.connection() as connection:
             raw_connection = connection.raw_connection
@@ -109,7 +109,7 @@ class Author(PydanticBaseEndpoint):
 
     async def put(self, request_data: typing.Dict) -> aiosqlite.Row:
         """
-        Retrieves the author for the given id.
+        Updates the author for the given id.
         """
         async with database.connection() as connection:
             raw_connection = connection.raw_connection
