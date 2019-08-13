@@ -1,0 +1,1 @@
+from starlette_cbge.schema_generator_backends.openapi_v3 import OpenAPIv3SchemaGenerator
