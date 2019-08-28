@@ -1,15 +1,17 @@
+"""
+Pydantic schema backend
+"""
 from typing import Dict, List, Any
 
-from pydantic import BaseModel, ValidationError
+try:
+    import pydantic
+except ImportError:
+    pydantic = None  # type: ignore
 
-from starlette_cbge.interfaces import (
-    SchemaInterface,
-    ListSchemaInterface,
-    ValidationErrorInterface,
-)
+from starlette_cbge.interfaces import SchemaInterface, ListSchemaInterface
 
 
-class PydanticSchema(SchemaInterface, BaseModel):
+class PydanticSchema(SchemaInterface, pydantic.BaseModel):
     @classmethod
     def perform_load(cls, data: Dict[str, Any]) -> Dict[str, Any]:
         return cls(**data).dict()
@@ -23,7 +25,7 @@ class PydanticSchema(SchemaInterface, BaseModel):
         return cls.schema()
 
 
-class PydanticListSchema(ListSchemaInterface, BaseModel):
+class PydanticListSchema(ListSchemaInterface, pydantic.BaseModel):
     @classmethod
     def perform_load(cls, data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         return [cls(**item_data).dict() for item_data in data]
@@ -36,13 +38,3 @@ class PydanticListSchema(ListSchemaInterface, BaseModel):
     def openapi_schema(cls) -> Dict[str, Any]:
         # TODO adjust for List
         return cls.schema()
-
-
-class PydanticValidationError(ValidationErrorInterface, ValidationError):
-    def get_errors(self) -> Any:
-        return self.errors
-
-
-class PydanticErrorResponse(BaseModel):
-    description: str
-    errors: List[Dict[str, Any]] = []

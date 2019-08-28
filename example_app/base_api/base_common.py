@@ -2,58 +2,11 @@ import typing
 
 import aiosqlite
 
-from starlette_cbge.endpoints import PydanticBaseEndpoint
-
 from example_app.db import database
-from starlette_cbge.schema_backends import PydanticSchema, PydanticListSchema
+from starlette_cbge.exceptions import NotFoundException
 
 
-class AuthorGetCoolectionRequestSchema(PydanticSchema):
-    limit: int = 100
-    offset: int = 0
-
-
-class AuthorPostRequestSchema(PydanticSchema):
-    name: str
-
-
-class AuthorIDRequestSchema(PydanticSchema):
-    id: int
-
-
-class AuthorPutReuqestSchema(PydanticSchema):
-    id: int
-    name: str
-
-
-class AuthorResponseSchema(PydanticSchema):
-    id: int
-    name: str
-
-
-class AuthorResponseListSchema(PydanticListSchema):
-    id: int
-    name: str
-
-
-class BlankResponseSchema(PydanticSchema):
-    pass
-
-
-class Authors(PydanticBaseEndpoint):
-    """
-    Collection endpoint.
-    """
-
-    request_schemas = (
-        ("GET", AuthorGetCoolectionRequestSchema),
-        ("POST", AuthorPostRequestSchema),
-    )
-    response_schemas = (
-        ("GET", AuthorResponseListSchema),
-        ("POST", AuthorResponseSchema),
-    )
-
+class AuthorsEndpoint:
     async def get(self, request_data: typing.Dict) -> typing.List[aiosqlite.Row]:
         """
         Retrieves the list of authors.
@@ -80,21 +33,16 @@ class Authors(PydanticBaseEndpoint):
             return await cursor.fetchone()
 
 
-class Author(PydanticBaseEndpoint):
-    """
-    Item endpoint.
-    """
-
-    request_schemas = (
-        ("GET", AuthorIDRequestSchema),
-        ("PUT", AuthorPutReuqestSchema),
-        ("DELETE", AuthorIDRequestSchema),
-    )
-    response_schemas = (
-        ("GET", AuthorResponseSchema),
-        ("PUT", AuthorResponseSchema),
-        ("DELETE", BlankResponseSchema),
-    )
+class AuthorEndpoint:
+    async def validate_get_action(self, payload: typing.Dict[str, typing.Any]) -> None:
+        """
+        Check if it exists
+        """
+        async with database.connection() as connection:
+            query = "SELECT EXISTS(SELECT 1 FROM authors WHERE id = :id);"
+            exists = await connection.fetch_val(query, payload)
+            if not exists:
+                raise NotFoundException()
 
     async def get(self, request_data: typing.Dict) -> aiosqlite.Row:
         """
