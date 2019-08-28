@@ -3,15 +3,32 @@ from starlette.routing import Route, Router
 from starlette.schemas import SchemaGenerator
 
 from example_app.db import database
-from example_app.base_pydantic_api.base_pydantic import Authors, Author
+from example_app.base_api import base_pydantic
+from example_app.base_api import base_typesystem
 
 
 base_pydantic_api = Router(
     [
-        Route("/authors", endpoint=Authors, methods=["GET", "POST"]),
-        Route("/authors/{id}", endpoint=Author, methods=["GET", "PUT", "DELETE"]),
+        Route("/authors", endpoint=base_pydantic.Authors, methods=["GET", "POST"]),
+        Route(
+            "/authors/{id}",
+            endpoint=base_pydantic.Author,
+            methods=["GET", "PUT", "DELETE"],
+        ),
     ]
 )
+
+base_typesystem_api = Router(
+    [
+        Route("/authors", endpoint=base_typesystem.Authors, methods=["GET", "POST"]),
+        Route(
+            "/authors/{id}",
+            endpoint=base_typesystem.Author,
+            methods=["GET", "PUT", "DELETE"],
+        ),
+    ]
+)
+
 
 base_pydantic_schemas = SchemaGenerator(
     {
@@ -21,7 +38,9 @@ base_pydantic_schemas = SchemaGenerator(
 )
 
 app = Starlette()
+
 app.mount("/base_pydantic_api", app=base_pydantic_api)
+app.mount("/base_typesystem_api", app=base_typesystem_api)
 
 
 @app.on_event("startup")

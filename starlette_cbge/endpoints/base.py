@@ -192,7 +192,7 @@ class BaseEndpoint(HTTPEndpoint):
         # TODO to implement custom validation
 
         validate_method_action = getattr(
-            self, f"validate_{request.method}_action", None
+            self, f"validate_{request.method.lower()}_action", None
         )
 
         if validate_method_action is not None:

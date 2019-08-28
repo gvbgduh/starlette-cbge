@@ -6,6 +6,8 @@ from starlette.exceptions import HTTPException
 
 
 INVALID_REQUEST = "Invalid request"
+CONFLICT = "Conflict"
+NOT_FOUND = "Not found"
 
 
 class ExtendedHTTPException(HTTPException):
@@ -49,5 +51,10 @@ class InvalidRequestException(ExtendedHTTPException):
 
 
 class ConflictException(ExtendedHTTPException):
-    def __init__(self, status_code: int = 409, detail: str = "Conflict") -> None:
+    def __init__(self, status_code: int = 409, detail: str = CONFLICT) -> None:
         super(ConflictException, self).__init__(status_code, detail)
+
+
+class NotFoundException(ExtendedHTTPException):
+    def __init__(self, status_code: int = 404, detail: str = NOT_FOUND) -> None:
+        super(NotFoundException, self).__init__(status_code, detail)

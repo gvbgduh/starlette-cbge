@@ -34,7 +34,7 @@ TBD
 
 ### Example usage
 
-Endpoint and schemas definitions
+Endpoint and schemas definitions with `pydantic`
 
 _authors.py_
 
@@ -44,9 +44,9 @@ import typing
 import aiosqlite
 
 from starlette_cbge.endpoints import PydanticBaseEndpoint
+from starlette_cbge.schema_backends import PydanticSchema, PydanticListSchema
 
 from example_app.db import database
-from starlette_cbge.schema_backends import PydanticSchema, PydanticListSchema
 
 
 class AuthorGetCoolectionRequestSchema(PydanticSchema):
@@ -105,6 +105,53 @@ class Authors(PydanticBaseEndpoint):
             query = "SELECT * FROM authors where id = last_insert_rowid();"
             cursor = await raw_connection.execute(query)
             return await cursor.fetchone()
+```
+
+or for `typesystem`
+
+```python
+from starlette_cbge.endpoints import TypesystemBaseEndpoint
+from starlette_cbge.schema_backends import (
+    TypesystemSchema,
+    TypesystemListSchema,
+    typesystem_fields,
+)
+
+
+class AuthorGetCoolectionRequestSchema(TypesystemSchema):
+    limit = typesystem_fields.Integer(default=100)
+    offset = typesystem_fields.Integer(default=0)
+
+
+class AuthorPostRequestSchema(TypesystemSchema):
+    name = typesystem_fields.String()
+
+
+class AuthorResponseSchema(TypesystemSchema):
+    id = typesystem_fields.Integer()
+    name = typesystem_fields.String()
+
+
+class AuthorResponseListSchema(TypesystemListSchema):
+    id = typesystem_fields.Integer()
+    name = typesystem_fields.String()
+
+
+class Authors(TypesystemBaseEndpoint):
+    """
+    Collection endpoint.
+    """
+
+    request_schemas = (
+        ("GET", AuthorGetCoolectionRequestSchema),
+        ("POST", AuthorPostRequestSchema),
+    )
+    response_schemas = (
+        ("GET", AuthorResponseListSchema),
+        ("POST", AuthorResponseSchema),
+    )
+    
+    # Same methods implementations
 ```
 
 Schema generation
