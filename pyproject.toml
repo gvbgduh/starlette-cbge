@@ -22,6 +22,7 @@ httpx = "^0.6.8"
 requests-async = "^0.6.2"
 pydantic = "^0.32.1"
 typesystem = "^0.2.4"
+aiosqlite = "^0.10.0"
 [build-system]
 requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
