@@ -1,7 +1,6 @@
 [[package]]
 category = "dev"
 description = "asyncio bridge to the standard sqlite3 module"
-marker = "extra == \"sqlite\""
 name = "aiosqlite"
 optional = false
 python-versions = ">=3.5"
@@ -505,7 +504,7 @@ docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
 testing = ["pathlib2", "contextlib2", "unittest2"]
 
 [metadata]
-content-hash = "b6523ae79db00bb6824e486abc023d47d0acf611f76c197140510a2921d63d4f"
+content-hash = "1ad111dfd32d74ed794a13478dfd6e42b3cc23e8e5b79f697fc22b68f3e89ab9"
 python-versions = "^3.7"
 
 [metadata.hashes]
