@@ -1,0 +1,9 @@
+steps:
+- name: 'gcr.io/cloud-builders/git'
+  id: check-configs
+  entrypoint: /bin/bash
+  args:
+  - '-c'
+  - |
+    echo "YAY" && \
+    ls -la
